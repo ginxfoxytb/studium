@@ -12,11 +12,9 @@
   import { getFirestore, collection, doc, getDocs,
            setDoc, deleteDoc, onSnapshot }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-  // ─────────────────────────────────────────────────────────────
-  // 🔧 REMPLACEZ CES VALEURS PAR VOTRE CONFIG FIREBASE
-  // (Paramètres du projet ⚙️ → Vos applications → Web → firebaseConfig)
-  // ─────────────────────────────────────────────────────────────
   const firebaseConfig = {
     apiKey:            "AIzaSyCPtKuLjvuqMqLptPuJxvlHvQAbqr4lV18",
     authDomain:        "studium-fd25c.firebaseapp.com",
@@ -25,27 +23,26 @@
     messagingSenderId: "239741703018",
     appId:             "1:239741703018:web:fc85a0760d2ab4104f8b13"
   };
-  // ─────────────────────────────────────────────────────────────
 
-  const CONFIGURED = firebaseConfig.apiKey !== "VOTRE_API_KEY";
-
-  if (CONFIGURED) {
-    try {
-      const app = initializeApp(firebaseConfig);
-      const db  = getFirestore(app);
-      window._db          = db;
-      window._collection  = collection;
-      window._doc         = doc;
-      window._getDocs     = getDocs;
-      window._setDoc      = setDoc;
-      window._deleteDoc   = deleteDoc;
-      window._onSnapshot  = onSnapshot;
-      window._fbReady     = true;
-    } catch(e) {
-      window._fbError = e.message;
-    }
-  } else {
-    window._fbNotConfigured = true;
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    const storage = getStorage(app);
+    window._db         = db;
+    window._storage    = storage;
+    window._collection = collection;
+    window._doc        = doc;
+    window._getDocs    = getDocs;
+    window._setDoc     = setDoc;
+    window._deleteDoc  = deleteDoc;
+    window._onSnapshot = onSnapshot;
+    window._ref        = ref;
+    window._uploadBytes    = uploadBytes;
+    window._getDownloadURL = getDownloadURL;
+    window._deleteObject   = deleteObject;
+    window._fbReady = true;
+  } catch(e) {
+    window._fbError = e.message;
   }
   document.dispatchEvent(new Event('fb-init'));
 </script>
@@ -60,29 +57,12 @@
 }
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
 
-/* LOADER */
 #loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;color:var(--muted);font-size:14px}
 #loader.gone{display:none}
 .spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* SETUP SCREEN */
-#setup{display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)}
-#setup.active{display:flex}
-.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px;width:90%;max-width:600px;animation:slideUp .3s}
-.setup-card h2{font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;margin-bottom:20px}
-.steps{background:var(--accent-light);border-radius:12px;padding:18px 22px;margin-bottom:24px;font-size:13px;color:var(--accent);line-height:2}
-.steps ol{padding-left:18px}
-.steps code{background:rgba(44,95,63,.15);padding:1px 6px;border-radius:4px;font-family:monospace}
-.setup-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:500;color:var(--muted);margin-bottom:8px;display:block}
-.setup-note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
-.setup-err{color:var(--danger);font-size:12px;margin-top:10px;display:none}
-.code-area{width:100%;min-height:160px;padding:14px;border:1px solid var(--border);border-radius:10px;font-family:monospace;font-size:12px;background:var(--bg);color:var(--text);outline:none;resize:vertical;line-height:1.7;transition:border .15s}
-.code-area:focus{border-color:var(--accent);background:white}
-
-/* SCREENS */
-.screen{display:none;min-height:100vh}
-.screen.active{display:flex}
+.screen{display:none;min-height:100vh}.screen.active{display:flex}
 #screen-login{align-items:center;justify-content:center;background:var(--bg);flex-direction:column}
 .login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:52px 48px;width:100%;max-width:400px;animation:slideUp .3s}
 .login-logo{font-family:'DM Serif Display',serif;font-size:36px;letter-spacing:-1px;margin-bottom:6px}
@@ -96,7 +76,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .login-admin{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);cursor:pointer}
 .login-admin span{color:var(--accent);text-decoration:underline}
 
-/* APP */
 #screen-app{flex-direction:row}
 .sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);padding:28px 16px;display:flex;flex-direction:column;gap:28px;position:fixed;height:100vh;overflow-y:auto}
 .logo{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-0.5px}
@@ -115,6 +94,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .sync-pill{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:500;margin-top:auto}
 .pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pd 2s infinite}
 @keyframes pd{0%,100%{opacity:1}50%{opacity:.25}}
+
 .main{margin-left:var(--sidebar);flex:1;padding:40px 48px;max-width:calc(100vw - var(--sidebar))}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px}
 .topbar h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;letter-spacing:-0.5px}
@@ -127,17 +107,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .search-input:focus{border-color:var(--accent)}
 .search-input::placeholder{color:var(--muted)}
 
-/* CARDS */
 .sec-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:500;margin-bottom:14px;margin-top:28px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .sec-label:first-child{margin-top:0}
 .course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:4px}
+
+/* CARD */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-color,var(--accent))}
 .card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.07);border-color:transparent}
 .card-sub{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;font-weight:500}
 .card-title{font-family:'DM Serif Display',serif;font-size:17px;line-height:1.3;margin-bottom:10px}
-.card-author{font-size:12px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.card-author{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .author-dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:white;flex-shrink:0}
+.card-file-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted);margin-bottom:10px}
 .card-meta{display:flex;align-items:center;justify-content:space-between}
 .card-date{font-size:12px;color:var(--muted)}
 .card-btns{display:flex;gap:6px}
@@ -146,13 +128,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ib.del:hover{background:var(--danger-light);color:var(--danger)}
 .ib svg{width:13px;height:13px}
 
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;border:none;transition:all .15s;font-weight:500}
 .btn-p{background:var(--accent);color:white}.btn-p:hover{background:#234f34}
 .btn-g{background:transparent;color:var(--text);border:1px solid var(--border)}.btn-g:hover{background:var(--surface)}
 .btn-sm{padding:6px 14px;font-size:12px}
 
-/* MODALS */
 .ov{position:fixed;inset:0;background:rgba(24,22,15,.5);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fadeIn .2s}
 .ov.open{display:flex}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -169,6 +149,36 @@ input.fi,select.fi,textarea.fi{width:100%;padding:10px 14px;border:1px solid var
 input.fi:focus,select.fi:focus,textarea.fi:focus{border-color:var(--accent);background:white}
 textarea.fi{min-height:120px;line-height:1.6}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* FILE UPLOAD ZONE */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:10px;padding:28px 20px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);
+  position:relative;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--accent-light)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone svg{width:28px;height:28px;color:var(--muted);margin:0 auto 10px;display:block}
+.upload-zone p{font-size:13px;color:var(--muted)}
+.upload-zone strong{color:var(--accent)}
+.upload-zone .formats{font-size:11px;color:var(--muted);margin-top:6px}
+
+.file-preview{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;background:var(--accent-light);border-radius:10px;
+  margin-top:12px;
+}
+.file-preview svg{width:20px;height:20px;color:var(--accent);flex-shrink:0}
+.file-preview-name{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-preview-size{font-size:11px;color:var(--muted)}
+.file-preview-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px}
+.file-preview-del:hover{color:var(--danger)}
+
+/* TABS in add course modal */
+.input-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.itab{padding:8px 16px;border:none;background:none;font-family:inherit;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.itab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+.itab-panel{display:none}.itab-panel.active{display:block}
 
 /* ADMIN */
 .admin-tabs{display:flex;gap:4px;margin-bottom:28px;border-bottom:1px solid var(--border)}
@@ -207,49 +217,27 @@ textarea.fi{min-height:120px;line-height:1.6}
 .qnav{display:flex;justify-content:space-between;align-items:center;margin-top:28px}
 .qsc{font-size:13px;color:var(--muted)}
 .loading{text-align:center;padding:40px;color:var(--muted)}
+.loading p{margin-top:12px;font-size:14px}
+.loading small{font-size:12px;opacity:.6}
 .rcircle{width:96px;height:96px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:'DM Serif Display',serif;font-size:28px;color:var(--accent)}
 
-/* MISC */
 .empty{text-align:center;padding:64px 20px;color:var(--muted)}
 .empty h2{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);margin-bottom:8px;font-weight:400}
 .empty p{font-size:14px;margin-bottom:20px}
 .tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;margin-bottom:12px}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Progress bar for upload */
+.upload-progress{
+  height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden;display:none;
+}
+.upload-progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;width:0%}
+.upload-progress.show{display:block}
 </style>
 </head>
 <body>
 
-<!-- LOADER -->
 <div id="loader"><div class="spinner"></div><p>Connexion à Firebase…</p></div>
-
-<!-- SETUP (si pas encore configuré) -->
-<div id="setup">
-  <div class="setup-card">
-    <h2>🔧 Configuration Firebase requise</h2>
-    <div class="steps">
-      <ol>
-        <li>Allez sur <strong>console.firebase.google.com</strong> → créez un projet</li>
-        <li>Menu gauche → <strong>Firestore Database</strong> → Créer → mode <code>Test</code></li>
-        <li>⚙️ Paramètres du projet → Vos applications → icône <code>&lt;/&gt;</code> Web</li>
-        <li>Copiez l'objet <code>firebaseConfig</code> et collez-le dans le fichier HTML à l'endroit indiqué</li>
-      </ol>
-    </div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.8">
-      Ouvrez le fichier <code>studium.html</code> dans un éditeur de texte (Notepad, VS Code…)<br>
-      Cherchez la ligne <code>apiKey: "VOTRE_API_KEY"</code> et remplacez les 6 valeurs par celles de votre projet Firebase.
-    </p>
-    <div style="margin-top:20px;padding:14px 18px;background:var(--accent-light);border-radius:10px;font-family:monospace;font-size:12px;line-height:1.8;color:var(--accent)">
-      const firebaseConfig = {<br>
-      &nbsp;&nbsp;apiKey: "<em>AIzaSy…</em>",<br>
-      &nbsp;&nbsp;authDomain: "<em>mon-projet</em>.firebaseapp.com",<br>
-      &nbsp;&nbsp;projectId: "<em>mon-projet</em>",<br>
-      &nbsp;&nbsp;storageBucket: "<em>mon-projet</em>.appspot.com",<br>
-      &nbsp;&nbsp;messagingSenderId: "<em>123456789</em>",<br>
-      &nbsp;&nbsp;appId: "<em>1:123…</em>"<br>
-      };
-    </div>
-  </div>
-</div>
 
 <!-- LOGIN -->
 <div id="screen-login" class="screen">
@@ -301,6 +289,7 @@ textarea.fi{min-height:120px;line-height:1.6}
     </div>
     <div class="sync-pill"><div class="pulse-dot"></div>Synchronisé en temps réel</div>
   </aside>
+
   <main class="main">
     <div class="topbar">
       <div>
@@ -328,7 +317,8 @@ textarea.fi{min-height:120px;line-height:1.6}
   </main>
 </div>
 
-<!-- MODALS -->
+<!-- ══ MODALS ══ -->
+
 <!-- Admin login -->
 <div class="ov" id="m-admin-login">
   <div class="modal">
@@ -354,9 +344,48 @@ textarea.fi{min-height:120px;line-height:1.6}
       <div class="fg"><label class="fl">Titre</label><input class="fi" id="c-title" type="text" placeholder="Ex: Mécanismes de la mémoire…"></div>
       <div class="fg"><label class="fl">Matière</label><select class="fi" id="c-subject"><option value="">— Choisir —</option></select></div>
     </div>
-    <div class="fg"><label class="fl">Contenu du cours</label>
-      <textarea class="fi" id="c-content" style="min-height:160px" placeholder="Collez ou rédigez le contenu ici. Plus c'est détaillé, meilleurs seront les QCM…"></textarea>
+
+    <!-- Tabs: texte ou fichier -->
+    <div class="input-tabs">
+      <button class="itab active" onclick="switchInputTab('text',this)">
+        <svg style="width:13px;height:13px;display:inline;margin-right:5px;vertical-align:-2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+        Texte
+      </button>
+      <button class="itab" onclick="switchInputTab('file',this)">
+        <svg style="width:13px;height:13px;display:inline;margin-right:5px;vertical-align:-2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Fichier
+      </button>
     </div>
+
+    <div class="itab-panel active" id="panel-text">
+      <div class="fg">
+        <label class="fl">Contenu du cours</label>
+        <textarea class="fi" id="c-content" style="min-height:160px" placeholder="Collez ou rédigez le contenu ici. Plus c'est détaillé, meilleurs seront les QCM…"></textarea>
+      </div>
+    </div>
+
+    <div class="itab-panel" id="panel-file">
+      <div class="fg">
+        <label class="fl">Fichier du cours</label>
+        <div class="upload-zone" id="upload-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif" onchange="onFileSelect(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p><strong>Cliquez</strong> ou glissez votre fichier ici</p>
+          <p class="formats">PDF, PNG, JPG, WEBP · Max 4 Mo</p>
+        </div>
+        <div id="file-preview" style="display:none" class="file-preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span class="file-preview-name" id="fp-name">—</span>
+          <span class="file-preview-size" id="fp-size">—</span>
+          <button class="file-preview-del" onclick="clearFile()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="upload-progress" id="upload-progress"><div class="upload-progress-bar" id="upload-bar"></div></div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px">L'IA lira directement votre fichier pour générer les QCM</p>
+      </div>
+    </div>
+
     <div style="display:flex;gap:12px;justify-content:flex-end">
       <button class="btn btn-g" onclick="closeModal('m-add-course')">Annuler</button>
       <button class="btn btn-p" id="btn-pub" onclick="saveCourse()">Publier le cours</button>
@@ -411,14 +440,31 @@ const COLORS = ['#c8a97a','#7a9bc8','#9b7ac8','#7ac8a0','#c87a7a','#c8c47a','#7a
 // ══ STATE
 let S = { subjects:[], courses:[], user:null, isAdmin:false, view:'all', subjFilter:null, sort:'date' };
 let _unsubC=null, _unsubS=null;
-let _db, _col, _doc_, _getDocs, _setDoc, _deleteDoc, _onSnap;
+let _db, _storage, _col, _doc_, _getDocs, _setDoc, _deleteDoc, _onSnap, _ref, _uploadBytes, _getDownloadURL, _deleteObject;
 let _currentAdminTab = 'overview';
 
+// Selected file state
+let _selectedFile = null;
+let _currentInputTab = 'text';
+
 // ══ FIREBASE HELPERS
-function fbCourse(c)  { return _setDoc(_doc_(_db,'courses',c.id), c); }
+function fbCourse(c)     { return _setDoc(_doc_(_db,'courses',c.id), c); }
 function fbDelCourse(id) { return _deleteDoc(_doc_(_db,'courses',id)); }
-function fbSubject(s) { return _setDoc(_doc_(_db,'subjects',s.id), s); }
-function fbDelSubject(id) { return _deleteDoc(_doc_(_db,'subjects',id)); }
+function fbSubject(s)    { return _setDoc(_doc_(_db,'subjects',s.id), s); }
+function fbDelSubject(id){ return _deleteDoc(_doc_(_db,'subjects',id)); }
+
+async function fbUploadFile(file, courseId) {
+  const ext = file.name.split('.').pop();
+  const path = `courses/${courseId}.${ext}`;
+  const storageRef = _ref(_storage, path);
+  const snap = await _uploadBytes(storageRef, file);
+  const url = await _getDownloadURL(snap.ref);
+  return { url, path, name: file.name, type: file.type, size: file.size };
+}
+
+async function fbDeleteFile(path) {
+  try { await _deleteObject(_ref(_storage, path)); } catch(e) { /* ignore */ }
+}
 
 function subscribe() {
   if(_unsubS) _unsubS(); if(_unsubC) _unsubC();
@@ -443,16 +489,50 @@ async function seedIfEmpty() {
   for(const s of defSubj) await fbSubject(s);
   const defCourses = [
     {id:'c1',title:'La mitose et la méiose',subject:'s1',
-     content:'La mitose est une division cellulaire produisant deux cellules filles identiques à la cellule mère (diploïdes). La méiose produit quatre cellules filles haploïdes. La mitose comporte 4 phases : prophase, métaphase, anaphase et télophase, précédées par l\'interphase où l\'ADN est répliqué.',
-     author:'Prof. Bernard',date:new Date(Date.now()-86400000*3).toISOString()},
+     content:'La mitose est une division cellulaire produisant deux cellules filles identiques à la cellule mère (diploïdes). La méiose produit quatre cellules filles haploïdes. Phases : prophase, métaphase, anaphase, télophase. Précédées par l\'interphase où l\'ADN est répliqué.',
+     author:'Prof. Bernard',date:new Date(Date.now()-86400000*3).toISOString(),type:'text'},
     {id:'c2',title:'Les contrats en droit civil',subject:'s2',
-     content:'Un contrat est un accord de volontés destiné à créer des obligations. Conditions de validité : consentement, capacité, objet certain, cause licite. Vices du consentement : erreur, dol, violence. Ces vices peuvent entraîner la nullité relative du contrat.',
-     author:'Marie D.',date:new Date(Date.now()-86400000*6).toISOString()},
-    {id:'c3',title:'Intégrales et primitives',subject:'s3',
-     content:'Une primitive F d\'une fonction f est telle que F\'=f. Formule de Newton-Leibniz : ∫[a,b] f(x)dx = F(b)-F(a). Intégration par parties : ∫u dv = uv - ∫v du. Toute fonction continue sur un intervalle admet des primitives.',
-     author:'Tom R.',date:new Date(Date.now()-86400000*1).toISOString()},
+     content:'Un contrat est un accord de volontés destiné à créer des obligations. Conditions de validité : consentement, capacité, objet certain, cause licite. Vices du consentement : erreur, dol, violence → nullité relative.',
+     author:'Marie D.',date:new Date(Date.now()-86400000*6).toISOString(),type:'text'},
   ];
   for(const c of defCourses) await fbCourse(c);
+}
+
+// ══ FILE UPLOAD UI
+function switchInputTab(tab, el) {
+  _currentInputTab = tab;
+  document.querySelectorAll('.itab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.itab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function onDragLeave(e) { document.getElementById('upload-zone').classList.remove('drag'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f) setFile(f);
+}
+function onFileSelect(e) { const f = e.target.files[0]; if(f) setFile(f); }
+
+function setFile(f) {
+  const allowed = ['application/pdf','image/png','image/jpeg','image/webp','image/gif'];
+  if(!allowed.includes(f.type)) { alert('Format non supporté. Utilisez PDF, PNG, JPG ou WEBP.'); return; }
+  if(f.size > 4*1024*1024) { alert('Fichier trop volumineux (max 4 Mo).'); return; }
+  _selectedFile = f;
+  document.getElementById('fp-name').textContent = f.name;
+  document.getElementById('fp-size').textContent = (f.size/1024).toFixed(0)+' Ko';
+  document.getElementById('file-preview').style.display = 'flex';
+  document.getElementById('upload-zone').style.display = 'none';
+}
+
+function clearFile() {
+  _selectedFile = null;
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('file-input').value = '';
 }
 
 // ══ AUTH
@@ -508,6 +588,11 @@ const relDate = iso => {
   if(d<7)return`Il y a ${Math.floor(d)} j`;
   return new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
 };
+function fileIcon(type) {
+  if(!type||type==='text') return '';
+  if(type.startsWith('image/')) return `<svg style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image`;
+  return `<svg style="width:11px;height:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF`;
+}
 
 // ══ RENDER
 function renderSidebar() {
@@ -548,10 +633,13 @@ function renderCourses() {
 }
 function cHTML(c){
   const col=sColor(c.subject),ac=nameCol(c.author),canDel=S.isAdmin||c.author===S.user;
+  const hasFile = c.type && c.type !== 'text';
+  const fi = fileIcon(c.type);
   return`<div class="card" style="--card-color:${col}" onclick="viewCourse('${c.id}')">
     <div class="card-sub">${sName(c.subject)}</div>
     <div class="card-title">${c.title}</div>
     <div class="card-author"><div class="author-dot" style="background:${ac}">${ini(c.author)}</div>${c.author}</div>
+    ${hasFile?`<div class="card-file-badge">${fi}</div>`:''}
     <div class="card-meta">
       <span class="card-date">${relDate(c.date)}</span>
       <div class="card-btns" onclick="event.stopPropagation()">
@@ -587,9 +675,8 @@ function setSubjView(id,el){
   renderCourses();
 }
 function setSort(s,el){
-  S.sort=s;
-  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-  el.classList.add('active'); renderCourses();
+  S.sort=s;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');renderCourses();
 }
 
 // ══ MODALS
@@ -615,24 +702,60 @@ async function saveSubject(){
 function openAddCourse(){
   document.getElementById('c-title').value='';
   document.getElementById('c-content').value='';
+  clearFile();
+  // reset to text tab
+  switchInputTab('text', document.querySelector('.itab'));
   const sel=document.getElementById('c-subject');
   sel.innerHTML='<option value="">— Choisir —</option>'+S.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   if(S.subjFilter)sel.value=S.subjFilter;
   openModal('m-add-course');
   setTimeout(()=>document.getElementById('c-title').focus(),100);
 }
+
 async function saveCourse(){
   const title=document.getElementById('c-title').value.trim();
   const subject=document.getElementById('c-subject').value;
-  const content=document.getElementById('c-content').value.trim();
-  if(!title||!subject||!content){alert('Remplissez tous les champs');return;}
-  const btn=document.getElementById('btn-pub'); btn.textContent='Publication…'; btn.disabled=true;
-  await fbCourse({id:'c'+Date.now(),title,subject,content,author:S.user,date:new Date().toISOString()});
-  btn.textContent='Publier le cours'; btn.disabled=false;
-  closeModal('m-add-course');
+  if(!title||!subject){alert('Remplissez le titre et la matière');return;}
+
+  if(_currentInputTab==='text'){
+    const content=document.getElementById('c-content').value.trim();
+    if(!content){alert('Entrez le contenu du cours');return;}
+    const btn=document.getElementById('btn-pub'); btn.textContent='Publication…'; btn.disabled=true;
+    await fbCourse({id:'c'+Date.now(),title,subject,content,type:'text',author:S.user,date:new Date().toISOString()});
+    btn.textContent='Publier le cours'; btn.disabled=false;
+    closeModal('m-add-course');
+  } else {
+    if(!_selectedFile){alert('Sélectionnez un fichier');return;}
+    const btn=document.getElementById('btn-pub'); btn.textContent='Envoi…'; btn.disabled=true;
+    const prog=document.getElementById('upload-progress');
+    const bar=document.getElementById('upload-bar');
+    prog.classList.add('show'); bar.style.width='30%';
+
+    try {
+      const courseId = 'c'+Date.now();
+      bar.style.width='60%';
+      const fileInfo = await fbUploadFile(_selectedFile, courseId);
+      bar.style.width='90%';
+      await fbCourse({
+        id:courseId, title, subject, type:_selectedFile.type,
+        fileUrl: fileInfo.url, filePath: fileInfo.path, fileName: fileInfo.name,
+        content: '', // will be read by AI at QCM time
+        author:S.user, date:new Date().toISOString()
+      });
+      bar.style.width='100%';
+      setTimeout(()=>prog.classList.remove('show'),500);
+    } catch(e) {
+      alert('Erreur lors de l\'upload : '+e.message);
+    }
+    btn.textContent='Publier le cours'; btn.disabled=false;
+    closeModal('m-add-course');
+  }
 }
+
 async function deleteCourse(id){
   if(!confirm('Supprimer ce cours définitivement ?'))return;
+  const c=S.courses.find(x=>x.id===id);
+  if(c && c.filePath) await fbDeleteFile(c.filePath);
   await fbDelCourse(id);
 }
 
@@ -640,6 +763,23 @@ async function deleteCourse(id){
 function viewCourse(id){
   const c=S.courses.find(x=>x.id===id); if(!c)return;
   const col=sColor(c.subject);
+  const hasFile = c.type && c.type !== 'text';
+  let fileSection = '';
+  if(hasFile){
+    if(c.type.startsWith('image/')){
+      fileSection=`<div style="margin-bottom:24px;border-radius:10px;overflow:hidden;max-height:400px"><img src="${c.fileUrl}" style="width:100%;object-fit:contain;background:var(--bg)" alt="${c.fileName}"></div>`;
+    } else {
+      fileSection=`<div style="margin-bottom:24px">
+        <a href="${c.fileUrl}" target="_blank" class="btn btn-g" style="text-decoration:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Ouvrir ${c.fileName}
+        </a>
+      </div>`;
+    }
+  }
+  const contentSection = !hasFile && c.content
+    ? `<div style="line-height:1.85;font-size:15px;white-space:pre-wrap">${c.content}</div>` : '';
+
   document.getElementById('m-view-body').innerHTML=`
     <div class="tag" style="background:${col}22;color:${col}">${sName(c.subject)}</div>
     <h2 style="font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;margin-bottom:6px">${c.title}</h2>
@@ -647,7 +787,8 @@ function viewCourse(id){
       <div style="width:22px;height:22px;border-radius:50%;background:${nameCol(c.author)};display:flex;align-items:center;justify-content:center;font-size:10px;color:white">${ini(c.author)}</div>
       ${c.author} • ${new Date(c.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
     </div>
-    <div style="line-height:1.85;font-size:15px;white-space:pre-wrap">${c.content}</div>
+    ${fileSection}
+    ${contentSection}
     <div style="margin-top:32px;display:flex;gap:12px">
       <button class="btn btn-p" onclick="closeModal('m-view');startQCM('${id}')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
@@ -656,6 +797,128 @@ function viewCourse(id){
       <button class="btn btn-g" onclick="closeModal('m-view')">Fermer</button>
     </div>`;
   openModal('m-view');
+}
+
+// ══ QCM
+let QCM={questions:[],current:0,score:0,answered:false,title:''};
+
+async function startQCM(id){
+  const c=S.courses.find(x=>x.id===id); if(!c)return;
+  QCM={questions:[],current:0,score:0,answered:false,title:c.title};
+  document.getElementById('qcm-box').innerHTML=`<div class="loading"><div class="spinner"></div><p>Génération du QCM par l'IA…</p><small>${c.type!=='text'?'Lecture du fichier en cours…':''}</small></div>`;
+  openModal('m-qcm');
+  try{
+    QCM.questions = await genQCM(c);
+    renderQ();
+  } catch(e){
+    document.getElementById('qcm-box').innerHTML=`
+      <button class="xbtn" onclick="closeModal('m-qcm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div style="text-align:center;padding:40px">
+        <p style="color:var(--danger);margin-bottom:16px">Impossible de générer le QCM.<br><small>${e.message}</small></p>
+        <button class="btn btn-g" onclick="closeModal('m-qcm')">Fermer</button>
+      </div>`;
+  }
+}
+
+async function genQCM(course){
+  const prompt = `Tu es un professeur expert. Génère exactement 5 questions QCM sur ce cours : "${course.title}" (matière : ${sName(course.subject)}).
+Réponds UNIQUEMENT avec un tableau JSON valide, sans texte ni backticks :
+[{"question":"...","options":["A","B","C","D"],"correct":0,"explanation":"Courte explication pédagogique."}]
+- correct = index 0-3 de la bonne réponse
+- Questions variées sur les points clés
+- Distracteurs plausibles`;
+
+  let messages;
+
+  if(course.type && course.type !== 'text' && course.fileUrl){
+    // Fetch the file and send it to Claude as an image or document
+    const resp = await fetch(course.fileUrl);
+    const blob = await resp.blob();
+    const base64 = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.readAsDataURL(blob);
+    });
+
+    if(course.type.startsWith('image/')){
+      messages = [{
+        role:'user',
+        content:[
+          { type:'image', source:{ type:'base64', media_type:course.type, data:base64 } },
+          { type:'text',  text: prompt + '\n\nBase tes questions sur le contenu de cette image de cours.' }
+        ]
+      }];
+    } else {
+      // PDF → document block
+      messages = [{
+        role:'user',
+        content:[
+          { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
+          { type:'text',     text: prompt + '\n\nBase tes questions sur le contenu de ce document.' }
+        ]
+      }];
+    }
+  } else {
+    // Text course
+    messages = [{
+      role:'user',
+      content: prompt + `\n\nContenu du cours :\n${course.content}`
+    }];
+  }
+
+  const r = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1200, messages })
+  });
+  if(!r.ok) throw new Error('Erreur API '+r.status);
+  const d = await r.json();
+  const txt = d.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim();
+  return JSON.parse(txt);
+}
+
+function renderQ(){
+  if(QCM.current>=QCM.questions.length){renderRes();return;}
+  const q=QCM.questions[QCM.current];
+  document.getElementById('qcm-box').innerHTML=`
+    <button class="xbtn" onclick="closeModal('m-qcm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">${QCM.title}</p>
+    <div class="qprog">${QCM.questions.map((_,i)=>`<div class="qdot ${i<QCM.current?'done':i===QCM.current?'cur':''}"></div>`).join('')}</div>
+    <p class="qtext">${q.question}</p>
+    <div class="opts">${q.options.map((o,i)=>`<div class="opt" onclick="pick(${i})">${o}</div>`).join('')}</div>
+    <div class="afb" id="qfb"></div>
+    <div class="qnav">
+      <span class="qsc">Score : ${QCM.score}/${QCM.current}</span>
+      <button class="btn btn-p" id="qnext" onclick="nextQ()" style="display:none">${QCM.current+1===QCM.questions.length?'Résultats':'Suivant →'}</button>
+    </div>`;
+  QCM.answered=false;
+}
+function pick(idx){
+  if(QCM.answered)return; QCM.answered=true;
+  const q=QCM.questions[QCM.current],ok=idx===q.correct; if(ok)QCM.score++;
+  document.querySelectorAll('.opt').forEach((el,i)=>{
+    el.classList.add('disabled');
+    if(i===q.correct)el.classList.add('ok');
+    else if(i===idx&&!ok)el.classList.add('ko');
+  });
+  const fb=document.getElementById('qfb');
+  fb.textContent=(ok?'✓ Correct ! ':'✗ Incorrect. ')+q.explanation;
+  fb.className='afb show '+(ok?'ok':'ko');
+  document.getElementById('qnext').style.display='inline-flex';
+}
+function nextQ(){QCM.current++;renderQ();}
+function renderRes(){
+  const {score,questions}=QCM,msg=score/questions.length>=.8?'Excellent !':score/questions.length>=.6?'Bien joué':'À retravailler';
+  document.getElementById('qcm-box').innerHTML=`
+    <button class="xbtn" onclick="closeModal('m-qcm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div style="text-align:center;padding:24px 0">
+      <div class="rcircle">${score}/${questions.length}</div>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;margin-bottom:8px">${msg}</h2>
+      <p style="color:var(--muted);margin-bottom:32px">${score} bonne${score>1?'s':''} réponse${score>1?'s':''} sur ${questions.length}</p>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-g" onclick="closeModal('m-qcm')">Fermer</button>
+        <button class="btn btn-p" onclick="QCM.current=0;QCM.score=0;renderQ()">Recommencer</button>
+      </div>
+    </div>`;
 }
 
 // ══ ADMIN PANEL
@@ -673,27 +936,31 @@ function renderAdminTab(){
   const el=document.getElementById('atab-body');
   if(_currentAdminTab==='overview'){
     const users=[...new Set(S.courses.map(c=>c.author))];
+    const withFile=S.courses.filter(c=>c.type&&c.type!=='text').length;
     el.innerHTML=`<div class="sgrid">
       <div class="scard"><div class="sval">${S.courses.length}</div><div class="slabel">Cours publiés</div></div>
       <div class="scard"><div class="sval">${users.length}</div><div class="slabel">Contributeurs</div></div>
-      <div class="scard"><div class="sval">${S.subjects.length}</div><div class="slabel">Matières</div></div>
+      <div class="scard"><div class="sval">${withFile}</div><div class="slabel">Cours avec fichier</div></div>
     </div>
     <div class="sec-label" style="margin-top:0">Activité récente</div>
-    <table class="atable"><thead><tr><th>Cours</th><th>Matière</th><th>Auteur</th><th>Date</th><th></th></tr></thead><tbody>
+    <table class="atable"><thead><tr><th>Cours</th><th>Type</th><th>Auteur</th><th>Date</th><th></th></tr></thead><tbody>
     ${S.courses.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10).map(c=>`
-      <tr><td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</td>
-      <td><span class="badge bg-m">${sName(c.subject)}</span></td>
-      <td><div style="display:flex;align-items:center;gap:6px"><div style="width:18px;height:18px;border-radius:50%;background:${nameCol(c.author)};display:flex;align-items:center;justify-content:center;font-size:9px;color:white">${ini(c.author)}</div>${c.author}</div></td>
-      <td style="color:var(--muted)">${relDate(c.date)}</td>
-      <td><button class="btn btn-g btn-sm" style="color:var(--danger);border-color:var(--danger-light)" onclick="deleteCourse('${c.id}')">Supprimer</button></td></tr>`).join('')}
+      <tr>
+        <td style="font-weight:500">${c.title}</td>
+        <td><span class="badge bg-m">${c.type&&c.type!=='text'?(c.type.startsWith('image/')?'Image':'PDF'):'Texte'}</span></td>
+        <td><div style="display:flex;align-items:center;gap:6px"><div style="width:18px;height:18px;border-radius:50%;background:${nameCol(c.author)};display:flex;align-items:center;justify-content:center;font-size:9px;color:white">${ini(c.author)}</div>${c.author}</div></td>
+        <td style="color:var(--muted)">${relDate(c.date)}</td>
+        <td><button class="btn btn-g btn-sm" style="color:var(--danger);border-color:var(--danger-light)" onclick="deleteCourse('${c.id}')">Supprimer</button></td>
+      </tr>`).join('')}
     </tbody></table>`;
   }else if(_currentAdminTab==='courses'){
     el.innerHTML=`<input class="search-input" style="margin:0 0 16px;width:100%" type="text" placeholder="Filtrer…" oninput="filterAC(this.value)">
-    <table class="atable" id="act"><thead><tr><th>Titre</th><th>Matière</th><th>Auteur</th><th>Date</th><th>Actions</th></tr></thead><tbody>
+    <table class="atable" id="act"><thead><tr><th>Titre</th><th>Matière</th><th>Type</th><th>Auteur</th><th>Date</th><th>Actions</th></tr></thead><tbody>
     ${S.courses.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(c=>`
       <tr data-t="${c.title.toLowerCase()}" data-a="${c.author.toLowerCase()}">
         <td style="font-weight:500">${c.title}</td>
         <td><span class="badge bg-m" style="background:${sColor(c.subject)}22;color:${sColor(c.subject)}">${sName(c.subject)}</span></td>
+        <td><span class="badge bg-m">${c.type&&c.type!=='text'?(c.type.startsWith('image/')?'🖼 Image':'📄 PDF'):'📝 Texte'}</span></td>
         <td><div style="display:flex;align-items:center;gap:6px"><div style="width:18px;height:18px;border-radius:50%;background:${nameCol(c.author)};display:flex;align-items:center;justify-content:center;font-size:9px;color:white">${ini(c.author)}</div>${c.author}</div></td>
         <td style="color:var(--muted)">${relDate(c.date)}</td>
         <td><div style="display:flex;gap:6px">
@@ -742,113 +1009,40 @@ function filterAC(q){
 }
 async function delUserCourses(author){
   if(!confirm(`Supprimer tous les cours de "${author}" ?`))return;
-  await Promise.all(S.courses.filter(c=>c.author===author).map(c=>fbDelCourse(c.id)));
+  const toDelete=S.courses.filter(c=>c.author===author);
+  for(const c of toDelete){ if(c.filePath) await fbDeleteFile(c.filePath); }
+  await Promise.all(toDelete.map(c=>fbDelCourse(c.id)));
 }
 async function delSubject(id,name){
   const cnt=S.courses.filter(c=>c.subject===id).length;
   if(!confirm(cnt>0?`Supprimer "${name}" et ses ${cnt} cours ?`:`Supprimer "${name}" ?`))return;
   await fbDelSubject(id);
-  await Promise.all(S.courses.filter(c=>c.subject===id).map(c=>fbDelCourse(c.id)));
-}
-
-// ══ QCM
-let QCM={questions:[],current:0,score:0,answered:false,title:''};
-async function startQCM(id){
-  const c=S.courses.find(x=>x.id===id); if(!c)return;
-  QCM={questions:[],current:0,score:0,answered:false,title:c.title};
-  document.getElementById('qcm-box').innerHTML=`<div class="loading"><div class="spinner"></div><p style="margin-top:12px">Génération du QCM par l'IA…</p></div>`;
-  openModal('m-qcm');
-  try{QCM.questions=await genQCM(c);renderQ();}
-  catch(e){
-    document.getElementById('qcm-box').innerHTML=`
-      <button class="xbtn" onclick="closeModal('m-qcm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <div style="text-align:center;padding:40px"><p style="color:var(--danger);margin-bottom:16px">Impossible de générer le QCM.<br><small>${e.message}</small></p>
-      <button class="btn btn-g" onclick="closeModal('m-qcm')">Fermer</button></div>`;
-  }
-}
-async function genQCM(course){
-  const r=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-      messages:[{role:"user",content:`Tu es un professeur expert. Génère exactement 5 questions QCM sur ce cours : "${course.title}".\n\nContenu : ${course.content}\n\nRéponds UNIQUEMENT avec un tableau JSON valide, sans texte ni backticks :\n[{"question":"...","options":["A","B","C","D"],"correct":0,"explanation":"Courte explication."}]`}]})
-  });
-  if(!r.ok) throw new Error('Erreur API '+r.status);
-  const d=await r.json();
-  return JSON.parse(d.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim());
-}
-function renderQ(){
-  if(QCM.current>=QCM.questions.length){renderRes();return;}
-  const q=QCM.questions[QCM.current];
-  document.getElementById('qcm-box').innerHTML=`
-    <button class="xbtn" onclick="closeModal('m-qcm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">${QCM.title}</p>
-    <div class="qprog">${QCM.questions.map((_,i)=>`<div class="qdot ${i<QCM.current?'done':i===QCM.current?'cur':''}"></div>`).join('')}</div>
-    <p class="qtext">${q.question}</p>
-    <div class="opts">${q.options.map((o,i)=>`<div class="opt" onclick="pick(${i})">${o}</div>`).join('')}</div>
-    <div class="afb" id="qfb"></div>
-    <div class="qnav">
-      <span class="qsc">Score : ${QCM.score}/${QCM.current}</span>
-      <button class="btn btn-p" id="qnext" onclick="nextQ()" style="display:none">${QCM.current+1===QCM.questions.length?'Résultats':'Suivant →'}</button>
-    </div>`;
-  QCM.answered=false;
-}
-function pick(idx){
-  if(QCM.answered)return; QCM.answered=true;
-  const q=QCM.questions[QCM.current],ok=idx===q.correct; if(ok)QCM.score++;
-  document.querySelectorAll('.opt').forEach((el,i)=>{
-    el.classList.add('disabled');
-    if(i===q.correct)el.classList.add('ok');
-    else if(i===idx&&!ok)el.classList.add('ko');
-  });
-  const fb=document.getElementById('qfb');
-  fb.textContent=(ok?'✓ Correct ! ':'✗ Incorrect. ')+q.explanation;
-  fb.className='afb show '+(ok?'ok':'ko');
-  document.getElementById('qnext').style.display='inline-flex';
-}
-function nextQ(){QCM.current++;renderQ();}
-function renderRes(){
-  const {score,questions}=QCM,msg=score/questions.length>=.8?'Excellent !':score/questions.length>=.6?'Bien joué':'À retravailler';
-  document.getElementById('qcm-box').innerHTML=`
-    <button class="xbtn" onclick="closeModal('m-qcm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div style="text-align:center;padding:24px 0">
-      <div class="rcircle">${score}/${questions.length}</div>
-      <h2 style="font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;margin-bottom:8px">${msg}</h2>
-      <p style="color:var(--muted);margin-bottom:32px">${score} bonne${score>1?'s':''} réponse${score>1?'s':''} sur ${questions.length}</p>
-      <div style="display:flex;gap:12px;justify-content:center">
-        <button class="btn btn-g" onclick="closeModal('m-qcm')">Fermer</button>
-        <button class="btn btn-p" onclick="QCM.current=0;QCM.score=0;renderQ()">Recommencer</button>
-      </div>
-    </div>`;
+  const toDelete=S.courses.filter(c=>c.subject===id);
+  for(const c of toDelete){ if(c.filePath) await fbDeleteFile(c.filePath); }
+  await Promise.all(toDelete.map(c=>fbDelCourse(c.id)));
 }
 
 // ══ BOOT
 document.addEventListener('fb-init', async () => {
-  if(window._fbNotConfigured){
-    document.getElementById('loader').classList.add('gone');
-    document.getElementById('setup').classList.add('active');
-    return;
-  }
   if(window._fbError){
     document.getElementById('loader').innerHTML=`<p style="color:var(--danger)">Erreur Firebase : ${window._fbError}</p>`;
     return;
   }
-  // Firebase ready
-  _db=window._db; _col=window._collection; _doc_=window._doc_;
-  _getDocs=window._getDocs; _setDoc=window._setDoc; _deleteDoc=window._deleteDoc; _onSnap=window._onSnapshot;
-
-  // Fix: window._doc is the function, but we named it _doc_ in the module export — reassign
-  _doc_=window._doc;
+  _db=window._db; _storage=window._storage;
+  _col=window._collection; _doc_=window._doc;
+  _getDocs=window._getDocs; _setDoc=window._setDoc;
+  _deleteDoc=window._deleteDoc; _onSnap=window._onSnapshot;
+  _ref=window._ref; _uploadBytes=window._uploadBytes;
+  _getDownloadURL=window._getDownloadURL; _deleteObject=window._deleteObject;
 
   await seedIfEmpty();
   document.getElementById('loader').classList.add('gone');
   showScreen('screen-login');
 });
 
-// Safety fallback for module timing
 setTimeout(()=>{
-  if(!document.getElementById('loader').classList.contains('gone')){
+  if(!document.getElementById('loader').classList.contains('gone'))
     document.dispatchEvent(new Event('fb-init'));
-  }
 },1500);
 </script>
 </body>
